@@ -23,6 +23,10 @@ Policies prevent insecure configurations by clamping the underlying Argon2id mem
 - **Extensible registry** – advanced users may inject tuned Argon2id instances or alternate hashers via the option system.
 - **Constant-time verification** – comparisons use helpers under `internal/subtle` to avoid timing leaks.
 
+## Zeroization
+
+pwdhash zeroizes password bytes, salts, and derived keys as soon as they are no longer needed. Due to Go runtime behavior this is a best-effort mitigation, but it significantly shortens the memory exposure window for sensitive material.
+
 ## Installation
 
 ```bash
