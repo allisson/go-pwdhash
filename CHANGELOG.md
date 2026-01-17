@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.0 - 2026-01-17
+- Added best-effort zeroization for password inputs, salts, and derived keys via `internal/zero` plus tests verifying the wipes.
+- Documented zeroization in the README and updated Argon2id hasher comments to reflect the memory hygiene behavior.
+- Raised validation guardrails for Argon2id parameters (min/max memory, iterations, parallelism) to prevent unsafe configurations.
+
 ## v0.2.0 - 2026-01-17
 - Added policy presets (`PolicyInteractive`, `PolicyModerate`, `PolicySensitive`) plus the `WithPolicy` option for configuring Argon2id without manual parameters.
 - Introduced `argon2.ParamsForPolicy` and a shared policy descriptor so the CLI and library reuse the same vetted defaults.

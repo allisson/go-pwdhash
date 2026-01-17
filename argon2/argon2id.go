@@ -11,6 +11,7 @@ import (
 	"github.com/allisson/go-pwdhash/internal/cast"
 	"github.com/allisson/go-pwdhash/internal/encoding"
 	"github.com/allisson/go-pwdhash/internal/subtle"
+	"github.com/allisson/go-pwdhash/internal/zero"
 )
 
 // Argon2idHasher wraps parameterized Argon2id hashing operations.
@@ -38,16 +39,20 @@ func (a *Argon2idHasher) ID() string {
 	return "argon2id"
 }
 
-// Hash derives an Argon2id key and returns the PHC string.
+// Hash derives an Argon2id key, zeroizes inputs, and returns the PHC string.
 func (a *Argon2idHasher) Hash(password []byte) (string, error) {
 	if err := a.validate(); err != nil {
 		return "", err
 	}
 
+	defer zero.Bytes(password)
+
 	salt := make([]byte, a.SaltLength)
 	if _, err := rand.Read(salt); err != nil {
 		return "", err
 	}
+
+	defer zero.Bytes(salt)
 
 	key := argon2.IDKey(
 		password,
@@ -57,6 +62,8 @@ func (a *Argon2idHasher) Hash(password []byte) (string, error) {
 		a.Parallelism,
 		a.KeyLength,
 	)
+
+	defer zero.Bytes(key)
 
 	enc := encoding.EncodedHash{
 		Algorithm: a.ID(),
@@ -73,16 +80,21 @@ func (a *Argon2idHasher) Hash(password []byte) (string, error) {
 	return enc.String(), nil
 }
 
-// Verify recomputes the Argon2id hash and compares it in constant time.
+// Verify recomputes the Argon2id hash, zeroizes temporaries, and compares it in constant time.
 func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
 	if err := a.validate(); err != nil {
 		return false, err
 	}
 
+	defer zero.Bytes(password)
+
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {
 		return false, err
 	}
+
+	defer zero.Bytes(parsed.Salt)
+	defer zero.Bytes(parsed.Hash)
 
 	if parsed.Algorithm != a.ID() {
 		return false, nil
@@ -121,6 +133,8 @@ func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
 		keyLen,
 	)
 
+	defer zero.Bytes(key)
+
 	return subtle.ConstantTimeCompare(key, parsed.Hash), nil
 }
 
@@ -147,14 +161,23 @@ func (a *Argon2idHasher) NeedsRehash(encoded string) (bool, error) {
 }
 
 func (a *Argon2idHasher) validate() error {
-	if a.Memory < 32*1024 {
+	if a.Memory < MinMemory {
 		return fmt.Errorf("argon2 memory too low")
 	}
-	if a.Iterations < 2 {
+	if a.Iterations < MinIterations {
 		return fmt.Errorf("argon2 iterations too low")
 	}
-	if a.Parallelism < 1 {
+	if a.Parallelism < MinIterations {
 		return fmt.Errorf("argon2 parallelism too low")
+	}
+	if a.Memory > MaxMemory {
+		return fmt.Errorf("argon2 memory too high")
+	}
+	if a.Iterations > MaxIterations {
+		return fmt.Errorf("argon2 iterations too high")
+	}
+	if a.Parallelism > MaxParallelism {
+		return fmt.Errorf("argon2 parallelism too high")
 	}
 	return nil
 }

@@ -191,3 +191,33 @@ func TestArgon2idHasher_NeedsRehashAlgorithmChange(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, needs)
 }
+
+func TestArgon2idHasher_HashZeroizesPassword(t *testing.T) {
+	hasher := newTestHasher()
+	password := []byte("topsecret")
+
+	_, err := hasher.Hash(password)
+	require.NoError(t, err)
+	requireZeroed(t, password)
+}
+
+func TestArgon2idHasher_VerifyZeroizesPassword(t *testing.T) {
+	hasher := newTestHasher()
+	encoded, err := hasher.Hash([]byte("topsecret"))
+	require.NoError(t, err)
+	password := []byte("topsecret")
+
+	_, err = hasher.Verify(password, encoded)
+	require.NoError(t, err)
+	requireZeroed(t, password)
+}
+
+func requireZeroed(t *testing.T, buf []byte) {
+	t.Helper()
+
+	for i := range buf {
+		if buf[i] != 0 {
+			require.Failf(t, "buffer not zeroed", "index %d contains %d", i, buf[i])
+		}
+	}
+}
