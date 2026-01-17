@@ -1,4 +1,6 @@
 # go-pwdhash
+[![Go Report Card](https://goreportcard.com/badge/github.com/allisson/go-pwdhash)](https://goreportcard.com/report/github.com/allisson/go-pwdhash)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/allisson/go-pwdhash)
 
 `go-pwdhash` is a Go-first password hashing helper that embraces the PHC (Password Hashing Competition) format, wraps Argon2id with safe defaults, and surfaces a minimal API for hashing, verification, and upgrades.
 
