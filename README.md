@@ -75,6 +75,96 @@ func main() {
 }
 ```
 
+## Usage Examples
+
+### Login Handler with Rehashes
+
+```go
+func login(ctx context.Context, email, candidate string) error {
+    storedHash := loadHashFromDB(ctx, email)
+
+    hasher, err := pwdhash.New(pwdhash.WithPolicy(pwdhash.PolicyModerate))
+    if err != nil {
+        return fmt.Errorf("pwdhash init: %w", err)
+    }
+
+    ok, err := hasher.Verify([]byte(candidate), storedHash)
+    if err != nil {
+        return fmt.Errorf("pwdhash verify: %w", err)
+    }
+    if !ok {
+        return errInvalidCredentials
+    }
+
+    needsUpgrade, err := hasher.NeedsRehash(storedHash)
+    if err != nil {
+        return fmt.Errorf("pwdhash rehash check: %w", err)
+    }
+    if needsUpgrade {
+        upgraded, err := hasher.Hash([]byte(candidate))
+        if err != nil {
+            return fmt.Errorf("pwdhash rehash: %w", err)
+        }
+        persistHash(ctx, email, upgraded)
+    }
+
+    return nil
+}
+```
+
+### Role-Based Policies
+
+```go
+type account struct {
+    Email string
+    Role  string
+}
+
+func policyForRole(role string) pwdhash.Policy {
+    switch role {
+    case "sre", "root":
+        return pwdhash.PolicySensitive
+    case "service", "api":
+        return pwdhash.PolicyModerate
+    default:
+        return pwdhash.PolicyInteractive
+    }
+}
+
+func hashForAccount(acct account, password []byte) (string, error) {
+    policy := policyForRole(acct.Role)
+
+    hasher, err := pwdhash.New(pwdhash.WithPolicy(policy))
+    if err != nil {
+        return "", err
+    }
+
+    return hasher.Hash(password)
+}
+```
+
+### Verifying External Hashes
+
+When migrating from another service, you may only have PHC-formatted hashes. You can still apply the pwdhash registry to
+validate them while planning a gradual rehash:
+
+```go
+func verifyLegacy(hash string, password []byte) (bool, error) {
+    hasher, err := pwdhash.New()
+    if err != nil {
+        return false, err
+    }
+
+    ok, err := hasher.Verify(password, hash)
+    if err != nil {
+        return false, err
+    }
+
+    // Decide later whether to rehash with NeedsRehash.
+    return ok, nil
+}
+```
+
 ## Configuration
 
 `pwdhash.New` accepts functional options:

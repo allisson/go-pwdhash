@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.3.1 - 2026-01-17
+- Added a README `Usage Examples` section covering a full login flow with rehashing, role-aware policy selection, and legacy PHC verification guidance.
+- Clarified how to combine `Verify`, `NeedsRehash`, and policy helpers in application code for migrations and privileged accounts.
+
 ## v0.3.0 - 2026-01-17
 - Added best-effort zeroization for password inputs, salts, and derived keys via `internal/zero` plus tests verifying the wipes.
 - Documented zeroization in the README and updated Argon2id hasher comments to reflect the memory hygiene behavior.
