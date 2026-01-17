@@ -3,6 +3,9 @@ package pwdhash
 import "github.com/allisson/go-pwdhash/argon2"
 
 // config holds PasswordHasher construction settings.
+//
+// These defaults are internal helpers; prefer With* options for user-facing
+// configuration until the API stabilizes.
 type config struct {
 	current Hasher
 }

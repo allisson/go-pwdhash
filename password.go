@@ -1,3 +1,4 @@
+// Package pwdhash manages password hashing via configurable algorithms.
 package pwdhash
 
 import (

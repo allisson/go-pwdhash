@@ -1,6 +1,7 @@
 package argon2
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -32,6 +33,72 @@ func TestArgon2idHasher_HashAndVerify(t *testing.T) {
 	require.False(t, ok)
 }
 
+func TestArgon2idHasher_VerifyErrors(t *testing.T) {
+	hasher := newTestHasher()
+
+	encoded, err := hasher.Hash([]byte("password"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		name      string
+		mutator   func(string) string
+		expectErr bool
+		expectOK  bool
+	}{
+		{
+			name: "wrongAlgorithm",
+			mutator: func(s string) string {
+				return strings.Replace(s, "argon2id", "bcrypt", 1)
+			},
+			expectErr: false,
+			expectOK:  false,
+		},
+		{
+			name: "wrongVersion",
+			mutator: func(s string) string {
+				return strings.Replace(s, "v=19", "v=27", 1)
+			},
+			expectErr: true,
+		},
+		{
+			name: "invalidParams",
+			mutator: func(s string) string {
+				return strings.Replace(s, "m=65536", "m=abc", 1)
+			},
+			expectErr: true,
+		},
+		{
+			name: "invalidHashLength",
+			mutator: func(s string) string {
+				return s[:len(s)-4]
+			},
+			expectErr: false,
+			expectOK:  false,
+		},
+		{
+			name: "malformedPHC",
+			mutator: func(string) string {
+				return "$argon2id$"
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mut := tt.mutator(encoded)
+			ok, err := hasher.Verify([]byte("password"), mut)
+			if tt.expectErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expectOK, ok)
+		})
+	}
+}
+
 func TestArgon2idHasher_NeedsRehashParameterChange(t *testing.T) {
 	hasher := newTestHasher()
 
@@ -42,7 +109,7 @@ func TestArgon2idHasher_NeedsRehashParameterChange(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, needs)
 
-	mutated := strings.Replace(encoded, "m=65536", "m=32768", 1)
+	mutated := strings.Replace(encoded, "m=65536", fmt.Sprintf("m=%d", hasher.Memory/2), 1)
 
 	needs, err = hasher.NeedsRehash(mutated)
 	require.NoError(t, err)

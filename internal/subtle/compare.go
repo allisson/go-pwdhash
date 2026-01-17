@@ -1,3 +1,4 @@
+// Package subtle provides wrappers for constant-time operations.
 package subtle
 
 import "crypto/subtle"

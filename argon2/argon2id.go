@@ -1,3 +1,4 @@
+// Package argon2 contains the Argon2id hasher implementation.
 package argon2
 
 import (
@@ -73,6 +74,14 @@ func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {
 		return false, err
+	}
+
+	if parsed.Algorithm != a.ID() {
+		return false, nil
+	}
+
+	if parsed.Version != argon2.Version {
+		return false, fmt.Errorf("unsupported argon2 version")
 	}
 
 	mem, err := cast.ConvertStringToUint32(parsed.Params["m"])

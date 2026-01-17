@@ -1,8 +1,10 @@
+// Package encoding handles encoding and parsing of PHC strings.
 package encoding
 
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -15,11 +17,17 @@ type EncodedHash struct {
 	Hash      []byte
 }
 
-// String renders the hash in PHC string format.
+// String renders the hash in PHC string format with deterministic parameter ordering.
 func (e EncodedHash) String() string {
-	params := []string{}
-	for k, v := range e.Params {
-		params = append(params, fmt.Sprintf("%s=%s", k, v))
+	keys := make([]string, 0, len(e.Params))
+	for k := range e.Params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	params := make([]string, 0, len(keys))
+	for _, k := range keys {
+		params = append(params, fmt.Sprintf("%s=%s", k, e.Params[k]))
 	}
 
 	return fmt.Sprintf(

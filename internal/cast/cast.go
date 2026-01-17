@@ -1,3 +1,4 @@
+// Package cast provides narrow numeric conversion helpers.
 package cast
 
 import (

@@ -31,9 +31,60 @@ func TestParse_ValidPHCString(t *testing.T) {
 	require.Equal(t, original.Hash, parsed.Hash)
 }
 
-func TestParse_InvalidPHCString(t *testing.T) {
-	_, err := Parse("$argon2id$")
-	require.Error(t, err)
+func TestParse_ErrorScenarios(t *testing.T) {
+	const validParams = "m=65536,t=3,p=4"
+	const validSalt = "YWJj"
+	const validHash = "ZGVm"
+
+	tests := []struct {
+		name      string
+		input     string
+		errSubstr string
+	}{
+		{
+			name:      "missingPrefix",
+			input:     "argon2id$v=19$" + validParams + "$" + validSalt + "$" + validHash,
+			errSubstr: "invalid PHC string",
+		},
+		{
+			name:      "tooFewParts",
+			input:     "$argon2id$",
+			errSubstr: "invalid PHC format",
+		},
+		{
+			name:      "missingVersion",
+			input:     "$argon2id$version$" + validParams + "$" + validSalt + "$" + validHash,
+			errSubstr: "missing version",
+		},
+		{
+			name:      "invalidVersion",
+			input:     "$argon2id$v=not-a-number$" + validParams + "$" + validSalt + "$" + validHash,
+			errSubstr: "invalid syntax",
+		},
+		{
+			name:      "invalidParam",
+			input:     "$argon2id$v=19$m65536$" + validSalt + "$" + validHash,
+			errSubstr: "invalid param",
+		},
+		{
+			name:      "badSalt",
+			input:     "$argon2id$v=19$" + validParams + "$@@@$" + validHash,
+			errSubstr: "illegal base64",
+		},
+		{
+			name:      "badHash",
+			input:     "$argon2id$v=19$" + validParams + "$" + validSalt + "$@@@",
+			errSubstr: "illegal base64",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Parse(tt.input)
+			require.Error(t, err)
+			require.ErrorContains(t, err, tt.errSubstr)
+		})
+	}
 }
 
 func TestEncodedHashStringIncludesMetadata(t *testing.T) {
