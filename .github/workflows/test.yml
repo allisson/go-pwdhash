@@ -1,0 +1,34 @@
+name: test
+
+on:
+  push:
+    branches:
+      - "*"
+      - "!main"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.24
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.24"
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v6
+      - name: Set cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Get dependencies
+        run: go mod download
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+      - name: Run Tests
+        run: make test
