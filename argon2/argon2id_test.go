@@ -18,6 +18,69 @@ func newTestHasher() *Argon2idHasher {
 	}
 }
 
+func TestParamsForPolicy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		policy int
+		want   PolicyParams
+		ok     bool
+	}{
+		{
+			name:   "interactive",
+			policy: 0,
+			want: PolicyParams{
+				Memory:      64 * 1024,
+				Iterations:  3,
+				Parallelism: 4,
+			},
+			ok: true,
+		},
+		{
+			name:   "moderate",
+			policy: 1,
+			want: PolicyParams{
+				Memory:      128 * 1024,
+				Iterations:  4,
+				Parallelism: 4,
+			},
+			ok: true,
+		},
+		{
+			name:   "sensitive",
+			policy: 2,
+			want: PolicyParams{
+				Memory:      256 * 1024,
+				Iterations:  5,
+				Parallelism: 8,
+			},
+			ok: true,
+		},
+		{
+			name:   "unknown",
+			policy: 3,
+			want:   PolicyParams{},
+			ok:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			params, err := ParamsForPolicy(tt.policy)
+			if tt.ok {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, params)
+				return
+			}
+
+			require.Error(t, err)
+		})
+	}
+}
+
 func TestArgon2idHasher_HashAndVerify(t *testing.T) {
 	hasher := newTestHasher()
 
