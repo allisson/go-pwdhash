@@ -6,11 +6,13 @@ import (
 	"github.com/allisson/go-pwdhash/internal/encoding"
 )
 
+// PasswordHasher manages password hashing operations via registered algorithms.
 type PasswordHasher struct {
 	current  Hasher
 	registry map[string]Hasher
 }
 
+// New constructs a PasswordHasher configured via the provided options.
 func New(opts ...Option) (*PasswordHasher, error) {
 	cfg := defaultConfig()
 
@@ -27,10 +29,12 @@ func New(opts ...Option) (*PasswordHasher, error) {
 	}, nil
 }
 
+// Hash encodes the provided password using the active hasher.
 func (p *PasswordHasher) Hash(password []byte) (string, error) {
 	return p.current.Hash(password)
 }
 
+// Verify checks whether the encoded hash matches the provided password.
 func (p *PasswordHasher) Verify(password []byte, encoded string) (bool, error) {
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {
@@ -45,6 +49,7 @@ func (p *PasswordHasher) Verify(password []byte, encoded string) (bool, error) {
 	return hasher.Verify(password, encoded)
 }
 
+// NeedsRehash reports whether the encoded hash should be regenerated.
 func (p *PasswordHasher) NeedsRehash(encoded string) (bool, error) {
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {

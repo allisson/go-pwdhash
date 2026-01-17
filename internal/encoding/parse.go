@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Parse decodes a PHC-formatted string into an EncodedHash structure.
 func Parse(s string) (*EncodedHash, error) {
 	parts := strings.Split(s, "$")
 	if len(parts) < 6 {

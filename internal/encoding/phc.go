@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// EncodedHash captures a PHC-formatted hash and associated metadata.
 type EncodedHash struct {
 	Algorithm string
 	Version   int
@@ -14,6 +15,7 @@ type EncodedHash struct {
 	Hash      []byte
 }
 
+// String renders the hash in PHC string format.
 func (e EncodedHash) String() string {
 	params := []string{}
 	for k, v := range e.Params {

@@ -11,6 +11,7 @@ import (
 	"github.com/allisson/go-pwdhash/internal/subtle"
 )
 
+// Argon2idHasher wraps parameterized Argon2id hashing operations.
 type Argon2idHasher struct {
 	Memory      uint32
 	Iterations  uint32
@@ -19,6 +20,7 @@ type Argon2idHasher struct {
 	KeyLength   uint32
 }
 
+// Default returns an Argon2idHasher configured with library defaults.
 func Default() *Argon2idHasher {
 	return &Argon2idHasher{
 		Memory:      64 * 1024,
@@ -29,10 +31,12 @@ func Default() *Argon2idHasher {
 	}
 }
 
+// ID reports the PHC algorithm identifier.
 func (a *Argon2idHasher) ID() string {
 	return "argon2id"
 }
 
+// Hash derives an Argon2id key and returns the PHC string.
 func (a *Argon2idHasher) Hash(password []byte) (string, error) {
 	salt := make([]byte, a.SaltLength)
 	if _, err := rand.Read(salt); err != nil {
@@ -63,6 +67,7 @@ func (a *Argon2idHasher) Hash(password []byte) (string, error) {
 	return enc.String(), nil
 }
 
+// Verify recomputes the Argon2id hash and compares it in constant time.
 func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {
@@ -85,6 +90,7 @@ func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
 	return subtle.ConstantTimeCompare(key, parsed.Hash), nil
 }
 
+// NeedsRehash reports whether the encoded parameters diverge from the current configuration.
 func (a *Argon2idHasher) NeedsRehash(encoded string) (bool, error) {
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {
