@@ -40,6 +40,10 @@ func (a *Argon2idHasher) ID() string {
 
 // Hash derives an Argon2id key and returns the PHC string.
 func (a *Argon2idHasher) Hash(password []byte) (string, error) {
+	if err := a.validate(); err != nil {
+		return "", err
+	}
+
 	salt := make([]byte, a.SaltLength)
 	if _, err := rand.Read(salt); err != nil {
 		return "", err
@@ -71,6 +75,10 @@ func (a *Argon2idHasher) Hash(password []byte) (string, error) {
 
 // Verify recomputes the Argon2id hash and compares it in constant time.
 func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
+	if err := a.validate(); err != nil {
+		return false, err
+	}
+
 	parsed, err := encoding.Parse(encoded)
 	if err != nil {
 		return false, err
@@ -136,4 +144,17 @@ func (a *Argon2idHasher) NeedsRehash(encoded string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (a *Argon2idHasher) validate() error {
+	if a.Memory < 32*1024 {
+		return fmt.Errorf("argon2 memory too low")
+	}
+	if a.Iterations < 2 {
+		return fmt.Errorf("argon2 iterations too low")
+	}
+	if a.Parallelism < 1 {
+		return fmt.Errorf("argon2 parallelism too low")
+	}
+	return nil
 }

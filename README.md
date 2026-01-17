@@ -1,15 +1,27 @@
 # go-pwdhash
 
-`go-pwdhash` is a Go-first implementation of the Password Hashing Competition (PHC) string format with a batteries-included Argon2id hasher, deterministic upgrade signals, and zero surprises for callers who need predictable password hygiene.
+`go-pwdhash` is a Go-first password hashing helper that embraces the PHC (Password Hashing Competition) format, wraps Argon2id with safe defaults, and surfaces a minimal API for hashing, verification, and upgrades.
+
+## Argon2id Only
+
+pwdhash intentionally supports **Argon2id only**. Algorithms that have already been superseded by Argon2id will not be added, reducing the chance of accidentally selecting outdated primitives. If a superior successor to Argon2id emerges, pwdhash will adopt it behind the same API surface.
+
+## Password Policies
+
+pwdhash ships with opinionated Argon2id policies so applications can select a strength profile without touching raw parameters:
+
+- **Interactive** – user login flows where latency matters most.
+- **Moderate** – API keys, service-to-service calls, and privileged automation.
+- **Sensitive** – infrastructure secrets, root accounts, and long-lived credentials.
+
+Policies prevent insecure configurations by clamping the underlying Argon2id memory, iteration, and parallelism values to vetted presets.
 
 ## Highlights
 
-- **Modern Argon2id defaults** – ships with 64MiB memory, 3 iterations, 4 lanes, 16-byte salts, 32-byte keys, and Argon2 v=19 metadata.
-- **PHC compliant outputs** – hashes look like `$argon2id$v=19$...` and round-trip cleanly through the built-in parser.
-- **Interoperable by design** – encoded hashes verify inside Python's `pwdlib` and equivalent implementations in Rust or C without adapters.
-- **Extensible registry** – inject alternative hashers (or tuned Argon2id instances) via options while keeping a single entry point.
-- **Deterministic lifecycle** – `Hash`, `Verify`, and `NeedsRehash` expose the minimum API you need to manage password upgrades.
-- **Constant-time comparisons** – verification uses `crypto/subtle` helpers to avoid timing leaks.
+- **PHC-compliant output** – hashes look like `$argon2id$v=19$...` and parse cleanly across ecosystems.
+- **Deterministic upgrade path** – `NeedsRehash` compares stored parameters to the active policy so callers know exactly when to re-encode.
+- **Extensible registry** – advanced users may inject tuned Argon2id instances or alternate hashers via the option system.
+- **Constant-time verification** – comparisons use helpers under `internal/subtle` to avoid timing leaks.
 
 ## Installation
 
@@ -17,7 +29,7 @@
 go get github.com/allisson/go-pwdhash
 ```
 
-The module targets Go 1.24, depends on `golang.org/x/crypto`, and uses `stretchr/testify` only for tests.
+The module targets Go 1.24, depends on `golang.org/x/crypto`, and uses `stretchr/testify` solely for tests.
 
 ## Quick Start
 
@@ -31,7 +43,9 @@ import (
 )
 
 func main() {
-    hasher, err := pwdhash.New()
+    hasher, err := pwdhash.New(
+        pwdhash.WithPolicy(pwdhash.PolicyInteractive),
+    )
     if err != nil {
         panic(err)
     }
@@ -57,7 +71,12 @@ func main() {
 
 ## Configuration
 
-`pwdhash.New` accepts functional options. By default it registers a single Argon2id hasher returned by `argon2.Default()`. To tune parameters, construct the hasher yourself and inject it:
+`pwdhash.New` accepts functional options:
+
+- `pwdhash.WithPolicy` selects one of the built-in presets.
+- `pwdhash.WithHasher` installs a custom `pwdhash.Hasher` (useful for bespoke Argon2id tuning or for experimenting with future algorithms).
+
+Example of injecting custom parameters:
 
 ```go
 import (
@@ -78,30 +97,23 @@ func tunedHasher() (*pwdhash.PasswordHasher, error) {
 }
 ```
 
-To introduce a new algorithm, implement the `pwdhash.Hasher` interface and register it through `WithHasher`. The password hasher keeps an internal registry keyed by `Hasher.ID()`, so mixed fleets of algorithms are possible during migrations.
+## PHC Encoding
 
-## PHC Encoding Basics
-
-Internally, the library serializes `encoding.EncodedHash` structures that follow the pattern:
+pwdhash serializes `encoding.EncodedHash` values using the canonical PHC layout:
 
 ```
 $argon2id$v=19$m=65536,t=3,p=4$<base64(salt)>$<base64(hash)>
 ```
 
-- Parameters are stored verbatim; `NeedsRehash` compares them to the current configuration to decide when to upgrade.
-- The parser validates the prefix, version, parameter key/value pairs, and base64 payloads, returning structured errors for callers.
-
-Because the format matches the PHC specification byte-for-byte, it remains compatible with Python, Rust, or C libraries that speak the same dialect.
+The parser validates algorithm identifiers, versions, parameter pairs, and Base64 payloads before handing them to the active hasher.
 
 ## Testing & Tooling
-
-Run the suite locally:
 
 ```bash
 go test ./...
 ```
 
-Automation-friendly targets live in the Makefile:
+Or use the convenience targets:
 
 ```bash
 make lint   # golangci-lint run -v --fix
@@ -112,9 +124,9 @@ make test   # go test -covermode=count -coverprofile=count.out -v ./...
 
 1. Fork and clone the repo.
 2. Run `go test ./...` (and `make lint`) before sending patches.
-3. Keep exports documented, stick to `gofmt` / `goimports`, and prefer table-driven tests.
-4. Discuss larger API changes via issues or draft PRs—Argon2 is the default focus, so new algorithms should include rationale and tests.
+3. Keep exports documented, prefer table-driven tests, and stick to `gofmt`/`goimports`.
+4. Argon2id is the focus; proposals for new algorithms should include rationale plus end-to-end tests.
 
 ## License
 
-MIT licensed. See `LICENSE` for full text.
+MIT licensed. See `LICENSE` for details.

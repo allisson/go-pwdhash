@@ -26,3 +26,21 @@ func WithHasher(h Hasher) Option {
 		c.current = h
 	}
 }
+
+// WithPolicy selects a preset Argon2id configuration for the PasswordHasher.
+func WithPolicy(p Policy) Option {
+	return func(c *config) {
+		params, err := argon2.ParamsForPolicy(int(p))
+		if err != nil {
+			panic(err) // invalid policy is a programming bug
+		}
+
+		c.current = &argon2.Argon2idHasher{
+			Memory:      params.Memory,
+			Iterations:  params.Iterations,
+			Parallelism: params.Parallelism,
+			SaltLength:  16,
+			KeyLength:   32,
+		}
+	}
+}
