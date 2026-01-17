@@ -1,17 +1,17 @@
 package subtle
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestConstantTimeCompare(t *testing.T) {
 	a := []byte("same-length")
 	b := []byte("same-length")
 
-	if !ConstantTimeCompare(a, b) {
-		t.Fatalf("expected slices to be equal")
-	}
+	require.True(t, ConstantTimeCompare(a, b))
 
 	different := []byte("different")
-	if ConstantTimeCompare(a, different) {
-		t.Fatalf("expected mismatch to return false")
-	}
+	require.False(t, ConstantTimeCompare(a, different))
 }

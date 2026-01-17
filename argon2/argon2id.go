@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/crypto/argon2"
 
+	"github.com/allisson/go-pwdhash/internal/cast"
 	"github.com/allisson/go-pwdhash/internal/encoding"
 	"github.com/allisson/go-pwdhash/internal/subtle"
 )
@@ -74,17 +75,33 @@ func (a *Argon2idHasher) Verify(password []byte, encoded string) (bool, error) {
 		return false, err
 	}
 
-	mem, _ := strconv.Atoi(parsed.Params["m"])
-	it, _ := strconv.Atoi(parsed.Params["t"])
-	par, _ := strconv.Atoi(parsed.Params["p"])
+	mem, err := cast.ConvertStringToUint32(parsed.Params["m"])
+	if err != nil {
+		return false, err
+	}
+
+	it, err := cast.ConvertStringToUint32(parsed.Params["t"])
+	if err != nil {
+		return false, err
+	}
+
+	par, err := cast.ConvertStringToUint8(parsed.Params["p"])
+	if err != nil {
+		return false, err
+	}
+
+	keyLen, err := cast.ConvertIntToUint32(len(parsed.Hash))
+	if err != nil {
+		return false, err
+	}
 
 	key := argon2.IDKey(
 		password,
 		parsed.Salt,
-		uint32(it),
-		uint32(mem),
-		uint8(par),
-		uint32(len(parsed.Hash)),
+		it,
+		mem,
+		par,
+		keyLen,
 	)
 
 	return subtle.ConstantTimeCompare(key, parsed.Hash), nil

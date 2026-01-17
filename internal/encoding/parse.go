@@ -7,6 +7,11 @@ import (
 )
 
 // Parse decodes a PHC-formatted string into an EncodedHash structure.
+//
+// The input must follow the "$<id>$v=<ver>$<params>$<salt>$<hash>" convention
+// defined by the PHC string format. Parameters are stored verbatim without
+// validation to keep parsing focused on syntax; callers must enforce any
+// semantic constraints.
 func Parse(s string) (*EncodedHash, error) {
 	parts := strings.Split(s, "$")
 	if len(parts) < 6 {

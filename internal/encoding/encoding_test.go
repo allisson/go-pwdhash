@@ -3,7 +3,6 @@ package encoding
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,10 +25,10 @@ func TestParse_ValidPHCString(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, parsed)
 
-	assert.Equal(t, original.Algorithm, parsed.Algorithm)
-	assert.Equal(t, original.Params, parsed.Params)
-	assert.Equal(t, original.Salt, parsed.Salt)
-	assert.Equal(t, original.Hash, parsed.Hash)
+	require.Equal(t, original.Algorithm, parsed.Algorithm)
+	require.Equal(t, original.Params, parsed.Params)
+	require.Equal(t, original.Salt, parsed.Salt)
+	require.Equal(t, original.Hash, parsed.Hash)
 }
 
 func TestParse_InvalidPHCString(t *testing.T) {
@@ -50,7 +49,7 @@ func TestEncodedHashStringIncludesMetadata(t *testing.T) {
 
 	encoded := enc.String()
 
-	assert.Contains(t, encoded, "$argon2id$")
-	assert.Contains(t, encoded, "$v=19$")
-	assert.Contains(t, encoded, "m=65536")
+	require.Contains(t, encoded, "$argon2id$")
+	require.Contains(t, encoded, "$v=19$")
+	require.Contains(t, encoded, "m=65536")
 }
