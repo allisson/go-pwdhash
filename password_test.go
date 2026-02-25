@@ -3,8 +3,9 @@ package pwdhash
 import (
 	"testing"
 
-	"github.com/allisson/go-pwdhash/argon2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/allisson/go-pwdhash/argon2"
 )
 
 type fakeHasher struct {
